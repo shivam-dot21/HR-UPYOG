@@ -53,6 +53,7 @@
     "dev:ads": "cd packages/modules/ads && yarn start",
     "dev:ew": "cd packages/modules/ew && yarn start",
     "dev:sv": "cd packages/modules/sv && yarn start",
+    "dev:finance": "cd packages/modules/finance && yarn start",
     "build": "run-p build:**",
     "build:libraries": "cd packages/libraries && yarn build",
     "buildD:asset": "cd packages/modules/asset && yarn build",
@@ -79,6 +80,7 @@
     "buildD:ew": "cd packages/modules/ew && yarn build",
     "buildD:sv": "cd packages/modules/sv && yarn build",
     "buildD:cm": "cd packages/modules/cm && yarn build",
+    "buildD:finance": "cd packages/modules/finance && yarn build",
     "buildR:reports": "cd packages/modules/reports && yarn build",
     "deploy:jenkins": "./scripts/jenkins.sh"
   },

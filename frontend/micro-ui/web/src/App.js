@@ -55,6 +55,8 @@ import {ADSModule,ADSLinks,ADSComponents} from "@upyog/upyog-ui-module-ads";
 
 // import { initReportsComponents } from "@upyog/digit-ui-module-reports";
 
+import { initFinanceComponents, FinanceModule } from "@mcd89/digit-ui-module-finance";
+
 initLibraries();
 
 const enabledModules = [
@@ -87,7 +89,8 @@ const enabledModules = [
   "ADS",
   "SV",
   "EW",
-  "CHB"
+  "CHB",
+  "Finance"
 ];
 window.Digit.ComponentRegistryService.setupRegistry({
   ...paymentConfigs,
@@ -120,6 +123,7 @@ window.Digit.ComponentRegistryService.setupRegistry({
   CHBModule,
   CHBLinks,
   ...CHBComponents,
+  FinanceModule
 });
 
 initPGRComponents();
@@ -135,6 +139,7 @@ initEngagementComponents();
 initWSComponents();
 initCommonPTComponents();
 initBillsComponents();
+initFinanceComponents();
 // initReportsComponents();
 // initCustomisationComponents();
 
