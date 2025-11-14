@@ -1,10 +1,9 @@
-import { BackButton, Dropdown, FormComposer, Loader, Toast } from "@upyog/digit-ui-react-components";
+import { BackButton, Dropdown, FormComposer, Loader, Toast,ViewsIcon,Close } from "@upyog/digit-ui-react-components";
 import PropTypes from "prop-types";
-import React, { useEffect, useState,useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useHistory } from "react-router-dom";
 import Background from "../../../components/Background";
 import Header from "../../../components/Header";
-
 /* set employee details to enable backward compatiable */
 const setEmployeeDetail = (userObject, token) => {
   let locale = JSON.parse(sessionStorage.getItem("Digit.locale"))?.value || "en_IN";
@@ -26,17 +25,18 @@ const Login = ({ config: propsConfig, t, isDisabled }) => {
   const [user, setUser] = useState(null);
   const [showToast, setShowToast] = useState(null);
   const [disable, setDisable] = useState(false);
- const [captchaText, setCaptchaText] = useState(() => generateCaptchaText());
+  const [captchaText, setCaptchaText] = useState(() => generateCaptchaText());
   const [captchaInput, setCaptchaInput] = useState("");
   const [captchaError, setCaptchaError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const history = useHistory();
   // const getUserType = () => "EMPLOYEE" || Digit.UserService.getType();
-  let   sourceUrl = "https://s3.ap-south-1.amazonaws.com/egov-qa-assets";
+  let sourceUrl = "https://s3.ap-south-1.amazonaws.com/egov-qa-assets";
   const pdfUrl = "https://pg-egov-assets.s3.ap-south-1.amazonaws.com/Upyog+Code+and+Copyright+License_v1.pdf";
   function generateCaptchaText() {
-    const chars = '0123456789';
-    let captchaText = '';
+    const chars = "0123456789";
+    let captchaText = "";
     for (let i = 0; i < 6; i++) {
       captchaText += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -47,15 +47,15 @@ const Login = ({ config: propsConfig, t, isDisabled }) => {
   function getCharStyles(index) {
     return {
       fontSize: `${Math.floor(Math.random() * 10) + 18}px`,
-      fontFamily: index % 2 === 0 ? 'Arial' : 'Verdana',
-      fontWeight: index % 2 === 0 ? 'bold' : 'normal',
-      x: 30 + (index * 25),
+      fontFamily: index % 2 === 0 ? "Arial" : "Verdana",
+      fontWeight: index % 2 === 0 ? "bold" : "normal",
+      x: 30 + index * 25,
       y: 30,
       rotation: Math.floor(Math.random() * 40) - 20,
-      translateY: Math.floor(Math.random() * 10) - 5
+      translateY: Math.floor(Math.random() * 10) - 5,
     };
   }
-function generateNoiseLines() {
+  function generateNoiseLines() {
     const lines = [];
     for (let i = 0; i < 4; i++) {
       lines.push({
@@ -85,10 +85,7 @@ function generateNoiseLines() {
 
   const noiseLines = useMemo(() => generateNoiseLines(), [captchaText]);
   const noiseDots = useMemo(() => generateNoiseDots(), [captchaText]);
-  const charStyles = useMemo(() =>
-    captchaText.split('').map((_, index) => getCharStyles(index)),
-    [captchaText]
-  );
+  const charStyles = useMemo(() => captchaText.split("").map((_, index) => getCharStyles(index)), [captchaText]);
 
   const refreshCaptcha = () => {
     setCaptchaText(generateCaptchaText());
@@ -115,8 +112,8 @@ function generateNoiseLines() {
 
     setCaptchaError(""); // Clear error if captcha is correct
     return true;
-  }
-  
+  };
+
   useEffect(() => {
     if (!user) {
       return;
@@ -134,7 +131,7 @@ function generateNoiseLines() {
     }
 
     /*  RAIN-6489 Logic to navigate to National DSS home incase user has only one role [NATADMIN]*/
-    if (user?.info?.roles && user?.info?.roles?.length > 0 &&  user?.info?.roles?.every((e) => e.code === "NATADMIN")) {
+    if (user?.info?.roles && user?.info?.roles?.length > 0 && user?.info?.roles?.every((e) => e.code === "NATADMIN")) {
       redirectPath = "/digit-ui/employee/dss/landing/NURT_DASHBOARD";
     }
     /*  RAIN-6489 Logic to navigate to National DSS home incase user has only one role [NATADMIN]*/
@@ -178,7 +175,7 @@ function generateNoiseLines() {
   };
 
   const onForgotPassword = () => {
-    sessionStorage.getItem("User") && sessionStorage.removeItem("User")
+    sessionStorage.getItem("User") && sessionStorage.removeItem("User");
     history.push("/digit-ui/employee/user/forgot-password");
   };
   const handleCaptchaInputChange = (e) => {
@@ -201,12 +198,61 @@ function generateNoiseLines() {
         },
         {
           label: t(password.label),
-          type: password.type,
+          type: "custom",
+          isMandatory: true,
           populators: {
             name: password.name,
+            component: (props) => (
+              <div style={{ width: "100%", marginBottom: "12px", position: "relative" }}>
+                {/* Password input matching Username exactly */}
+                <input
+                  type={showPassword ? "text" : password.type}
+                  value={props.value}
+                  name={password.name}
+                  onChange={(e) => props.onChange(e.target.value)}
+                  placeholder={t(password.label)}
+                  className="w-full"
+                  style={{
+                    width: "100%",
+                    height: "40px",
+                    padding: "8px 40px 8px 12px", // <-- space for icon inside
+                    border: "1px solid black",
+                    backgroundColor: "#eef2ff", // <-- Same as Username
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
+                />
+
+                {/* Eye Icon inside input box */}
+                <span
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    cursor: "pointer",
+                    fontSize: "18px",
+                    color: "#444",
+                    background: "transparent",
+                    padding: "0",
+                    userSelect: "none",
+                  }}
+                >
+                  {showPassword ?<Close /> : <ViewsIcon />  }{" "}
+                </span>
+              </div>
+            ),
           },
-          isMandatory: true,
         },
+        // {
+        //   label: t(password.label),
+        //   type: password.type,
+        //   populators: {
+        //     name: password.name,
+        //   },
+        //   isMandatory: true,
+        // },
         {
           label: t(city.label),
           type: city.type,
@@ -229,7 +275,7 @@ function generateNoiseLines() {
           isMandatory: true,
         },
 
- {
+        {
           label: t("Captcha Verification"),
           type: "custom",
           populators: {
@@ -239,14 +285,14 @@ function generateNoiseLines() {
               <div>
                 <div style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
                   <div style={{ border: "1px solid #ccc", marginRight: "10px" }}>
-                    <svg width="200" height="50" viewBox="0 0 200 50" xmlns="http://www.w3.org/2000/svg" style={{ backgroundColor: '#f0f0f0' }}>
+                    <svg width="200" height="50" viewBox="0 0 200 50" xmlns="http://www.w3.org/2000/svg" style={{ backgroundColor: "#f0f0f0" }}>
                       {noiseLines.map((line, index) => (
                         <line key={`line-${index}`} {...line} />
                       ))}
                       {noiseDots.map((dot, index) => (
                         <circle key={`dot-${index}`} {...dot} />
                       ))}
-                      {captchaText.split('').map((char, index) => {
+                      {captchaText.split("").map((char, index) => {
                         const charStyle = charStyles[index];
                         return (
                           <g key={index} transform={`translate(${charStyle.x}, ${charStyle.y}) rotate(${charStyle.rotation})`}>
@@ -272,7 +318,7 @@ function generateNoiseLines() {
                       cursor: "pointer",
                       color: "#882636",
                       fontSize: "20px",
-                      outline: "none"
+                      outline: "none",
                     }}
                     title="Refresh Captcha"
                   >
@@ -292,15 +338,9 @@ function generateNoiseLines() {
                       borderRadius: "4px",
                       marginBottom: "10px",
                       outline: "none",
-
                     }}
                   />
-                  {captchaError && (
-                    <div style={{ color: "red", fontSize: "14px", marginTop: "5px" }}>
-                      {captchaError}
-                    </div>
-                  )}
-
+                  {captchaError && <div style={{ color: "red", fontSize: "14px", marginTop: "5px" }}>{captchaError}</div>}
                 </div>
               </div>
             ),
@@ -332,12 +372,12 @@ function generateNoiseLines() {
         headingStyle={{ textAlign: "center" }}
         cardStyle={{ margin: "auto", minWidth: "408px" }}
         className="loginFormStyleEmployee"
-        buttonStyle={{ maxWidth: "100%", width: "100%" ,backgroundColor:"#5a1166"}}
+        buttonStyle={{ maxWidth: "100%", width: "100%", backgroundColor: "#5a1166" }}
       >
         {/* <Header /> */}
       </FormComposer>
       {showToast && <Toast error={true} label={t(showToast)} onClose={closeToast} />}
-        <div style={{ width: "100%", position: "fixed", bottom: 0, backgroundColor: "white", textAlign: "center" }}>
+      <div style={{ width: "100%", position: "fixed", bottom: 0, backgroundColor: "white", textAlign: "center" }}>
         <div style={{ display: "flex", justifyContent: "center", color: "black" }}>
           {/* <span style={{ cursor: "pointer", fontSize: window.Digit.Utils.browser.isMobile()?"12px":"12px", fontWeight: "400"}} onClick={() => { window.open('https://www.digit.org/', '_blank').focus();}} >Powered by DIGIT</span>
           <span style={{ margin: "0 10px" ,fontSize: window.Digit.Utils.browser.isMobile()?"12px":"12px"}}>|</span> */}
