@@ -162,8 +162,18 @@ export const httpRequest = async (
         apiError;
     }
   }
-  // unhandled error
+    if (isTokenInvalid) {
+      clearUserDetails()
+      window.location.href = `${window.location.origin}/digit-ui/employee/user/login`;
+      return;
+    }
   throw new Error(apiError);
+};
+
+
+export const clearUserDetails = () => {
+  window.localStorage.clear();
+  window.sessionStorage.clear();
 };
 
 export const uploadFile = async (endPoint, module, file, ulbLevel) => {

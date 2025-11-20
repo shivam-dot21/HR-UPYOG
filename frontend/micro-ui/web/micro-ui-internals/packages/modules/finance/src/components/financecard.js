@@ -24,11 +24,6 @@ const FinanceCard = () => {
     kpis: [
       {
         count: "-",
-        label: t("TENANT_FINANCIAL_DASHBOARD"),
-        link: "/digit-ui/employee/services/EGF/dashboard",
-      },
-      {
-        count: "-",
         label: t("ACTION_TEST_FINANCE_INBOX"),
         link: "/digit-ui/employee/finance/inbox",
       }
@@ -38,6 +33,7 @@ const FinanceCard = () => {
       //   label: t("ACTION_TEST_FINANCE_INBOX"),
       //   link: `/digit-ui/employee/finance/inbox`,
       // }
+      
     ],
   };
 
