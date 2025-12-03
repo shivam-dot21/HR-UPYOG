@@ -151,13 +151,13 @@ const initDigitUI = () => {
   initMCollectComponents();
   initHRMSComponents();
   initFinanceComponents();
-  initTLComponents();
+  // initTLComponents();
   initReceiptsComponents();
   // initReportsComponents();
-  initOBPSComponents();
+  // initOBPSComponents();
   initEngagementComponents();
-  initNOCComponents();
-  initWSComponents();
+  // initNOCComponents();
+  // initWSComponents();
   initCommonPTComponents();
   initBillsComponents();
 
