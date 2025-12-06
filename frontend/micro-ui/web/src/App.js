@@ -4,14 +4,14 @@ import {
   initPGRComponents,
   PGRReducers,
 } from "@upyog/digit-ui-module-pgr";
-import { initFSMComponents } from "@upyog/digit-ui-module-fsm";
+// import { initFSMComponents } from "@upyog/digit-ui-module-fsm";
 // import {
 //   PTModule,
 //   PTLinks,
 //   PTComponents,
 // } from "@upyog/digit-ui-module-pt";
 import { MCollectModule, MCollectLinks, initMCollectComponents } from "@upyog/digit-ui-module-mcollect";
-import { initDSSComponents } from "@upyog/digit-ui-module-dss";
+// import { initDSSComponents } from "@upyog/digit-ui-module-dss";
 import {
   PaymentModule,
   PaymentLinks,
@@ -31,10 +31,10 @@ import {
 import { initReceiptsComponents, ReceiptsModule } from "@upyog/digit-ui-module-receipts";
 // import { initOBPSComponents } from "@upyog/digit-ui-module-obps";
 // import { initNOCComponents } from "@upyog/digit-ui-module-noc";
-import { initEngagementComponents } from "@upyog/digit-ui-module-engagement";
+// import { initEngagementComponents } from "@upyog/digit-ui-module-engagement";
 // import { initWSComponents } from "@upyog/digit-ui-module-ws";
 // import { initCustomisationComponents } from "./Customisations";
-import { initCommonPTComponents } from "@upyog/digit-ui-module-commonpt";
+// import { initCommonPTComponents } from "@upyog/digit-ui-module-commonpt";
 import { initBillsComponents } from "@upyog/digit-ui-module-bills";
 // import {
 //   PTRModule,
@@ -128,17 +128,17 @@ window.Digit.ComponentRegistryService.setupRegistry({
 });
 
 initPGRComponents();
-initFSMComponents();
-initDSSComponents();
+// initFSMComponents();
+// initDSSComponents();
 initMCollectComponents();
 initHRMSComponents();
 // initTLComponents();
 initReceiptsComponents();
 // initOBPSComponents();
 // initNOCComponents();
-initEngagementComponents();
+// initEngagementComponents();
 // initWSComponents();
-initCommonPTComponents();
+// initCommonPTComponents();
 initBillsComponents();
 initFinanceComponents();
 // initReportsComponents();

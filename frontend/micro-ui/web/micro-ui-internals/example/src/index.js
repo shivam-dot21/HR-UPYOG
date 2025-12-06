@@ -6,9 +6,9 @@ import { PGRReducers } from "@upyog/digit-ui-module-pgr";
 import { PTModule, PTLinks, PTComponents } from "@upyog/digit-ui-module-pt";
 import { MCollectModule, MCollectLinks } from "@upyog/digit-ui-module-mcollect";
 // import { TLModule, TLLinks } from "@upyog/digit-ui-module-tl";
-import { initFSMComponents } from "@upyog/digit-ui-module-fsm";
+// import { initFSMComponents } from "@upyog/digit-ui-module-fsm";
 import { initPGRComponents } from "@upyog/digit-ui-module-pgr";
-import { initDSSComponents } from "@upyog/digit-ui-module-dss";
+// import { initDSSComponents } from "@upyog/digit-ui-module-dss";
 import { initHRMSComponents } from "@upyog/digit-ui-module-hrms";
 import { initFinanceComponents } from "@mcd89/digit-ui-module-finance";
 import { initReceiptsComponents, ReceiptsModule } from "@upyog/digit-ui-module-receipts";
@@ -19,11 +19,11 @@ import { PaymentModule, PaymentLinks, paymentConfigs } from "@upyog/digit-ui-mod
 import { HRMSModule } from "@upyog/digit-ui-module-hrms";
 import { FinanceModule } from "@mcd89/digit-ui-module-finance";
 import { initOBPSComponents } from "@upyog/digit-ui-module-obps";
-import { initEngagementComponents } from "@upyog/digit-ui-module-engagement";
+// import { initEngagementComponents } from "@upyog/digit-ui-module-engagement";
 import { initNOCComponents } from "@upyog/digit-ui-module-noc";
 import { initWSComponents } from "@upyog/digit-ui-module-ws";
 import { DigitUI } from "@upyog/digit-ui-module-core";
-import { initCommonPTComponents } from "@upyog/digit-ui-module-commonpt";
+// import { initCommonPTComponents } from "@upyog/digit-ui-module-commonpt";
 import { initBillsComponents, BillsModule } from "@upyog/digit-ui-module-bills";
 
 // import {initCustomisationComponents} from "./customisations";
@@ -145,7 +145,7 @@ const initDigitUI = () => {
   ...CHBComponents
   });
 
-  initFSMComponents();
+  // initFSMComponents();
   initPGRComponents();
   initDSSComponents();
   initMCollectComponents();
