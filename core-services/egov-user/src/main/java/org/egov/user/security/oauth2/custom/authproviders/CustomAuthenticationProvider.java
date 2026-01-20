@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import static java.util.Objects.isNull;
 import static org.egov.user.config.UserServiceConstants.IP_HEADER_NAME;
 import static org.springframework.util.StringUtils.isEmpty;
+import org.egov.user.domain.service.AuthAuditLogService;
 
 @Component("customAuthProvider")
 @Slf4j
@@ -63,6 +64,9 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
     @Autowired
     private HttpServletRequest request;
 
+ // Audit log for user authentication actions - santosh kumar mahto
+    @Autowired
+    private AuthAuditLogService authAuditLogService;
 
     public CustomAuthenticationProvider(UserService userService) {
         this.userService = userService;
@@ -103,9 +107,29 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
 
         } catch (UserNotFoundException e) {
             log.error("User not found", e);
+            authAuditLogService.log(
+                    null,                        // no user UUID
+                    userName,                    // attempted username
+                    request.getRemoteAddr(),
+                    request.getHeader("User-Agent"),
+                    request.getSession(false) != null ? request.getSession(false).getId() : null,
+                    "LOGIN",
+                    "FAILURE",
+                    request.getRequestURI()
+                );
             throw new OAuth2Exception("Invalid login credentials");
         } catch (DuplicateUserNameException e) {
             log.error("Fatal error, user conflict, more than one user found", e);
+            authAuditLogService.log(
+                    null,
+                    userName,
+                    request.getRemoteAddr(),
+                    request.getHeader("User-Agent"),
+                    null,
+                    "LOGIN",
+                    "FAILURE",
+                    request.getRequestURI()
+                );
             throw new OAuth2Exception("Invalid login credentials");
 
         }
@@ -152,10 +176,30 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             grantedAuths.add(new SimpleGrantedAuthority("ROLE_" + user.getType()));
             final SecureUser secureUser = new SecureUser(getUser(user));
             userService.resetFailedLoginAttempts(user);
+            authAuditLogService.log(
+            	    user.getUuid(),
+            	    userName,
+            	    request.getRemoteAddr(),
+            	    request.getHeader("User-Agent"),
+            	    request.getSession().getId(),
+            	    "LOGIN",
+            	    "SUCCESS",
+            	    request.getRequestURI()
+            	);
             return new UsernamePasswordAuthenticationToken(secureUser,
                     password, grantedAuths);
         } else {
             // Handle failed login attempt
+        	authAuditLogService.log(
+            	    user.getUuid(),
+            	    userName,
+            	    request.getRemoteAddr(),
+            	    request.getHeader("User-Agent"),
+            	    request.getSession(false) != null ? request.getSession(false).getId() : null,
+            	    "LOGIN",
+            	    "FAILURE",
+            	    request.getRequestURI()
+            	);
             // Fetch Real IP after being forwarded by reverse proxy
             userService.handleFailedLogin(user, request.getHeader(IP_HEADER_NAME), requestInfo);
 
