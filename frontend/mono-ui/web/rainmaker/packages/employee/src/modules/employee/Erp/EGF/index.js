@@ -257,7 +257,12 @@ async fetchTTL() {
   onMessage = (event) => {
     if (event.data != "close") return;
     // document.getElementById('erp_iframe').style.display='none';
-    this.props.history.push("/inbox");
+   // this.props.history.push("/inbox");
+	if (window.history.length > 2) {
+      window.history.go(-2);
+    } else {
+      window.history.back();
+    }
   };
   resetIframe = () => {
     console.log("Resetting iframe...");
