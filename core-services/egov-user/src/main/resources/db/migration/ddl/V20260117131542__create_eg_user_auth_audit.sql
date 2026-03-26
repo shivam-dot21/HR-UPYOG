@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS eg_user_auth_audit (
+CREATE TABLE eg_user_auth_audit (
     id BIGSERIAL PRIMARY KEY,
     user_uuid VARCHAR(64),
     username VARCHAR(64),
@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS eg_user_auth_audit (
     created_at TIMESTAMP DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_auth_audit_user_uuid
+CREATE INDEX idx_auth_audit_user_uuid
     ON eg_user_auth_audit(user_uuid);
 
-CREATE INDEX IF NOT EXISTS idx_auth_audit_created_at
+CREATE INDEX idx_auth_audit_created_at
     ON eg_user_auth_audit(created_at);
