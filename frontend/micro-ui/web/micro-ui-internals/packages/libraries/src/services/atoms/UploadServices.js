@@ -1,7 +1,15 @@
 import Axios from "axios";
 import Urls from "./urls";
+
 export const UploadServices = {
   Filestorage: async (module, filedata, tenantId) => {
+    // Global Security Check
+    const validation = Digit.Utils.fileValidation.validateFile(filedata, { maxSizeMB: 5 });
+    if (!validation.isValid) {
+      console.error(`File upload blocked by security policy: ${validation.error}`);
+      throw new Error(`FILE_VALIDATION_FAILED_${validation.error}`);
+    }
+    const finalFile = validation.file;
     const formData = new FormData();
 
     formData.append("file", filedata, filedata.name);
@@ -20,8 +28,20 @@ export const UploadServices = {
 
   MultipleFilesStorage: async (module, filesData, tenantId) => {
     const formData = new FormData();
-    const filesArray = Array.from(filesData)
-    filesArray?.forEach((fileData, index) => fileData ? formData.append("file", fileData, fileData.name) : null);
+    const filesArray = Array.from(filesData);
+
+    for (const fileData of filesArray) {
+      if (fileData) {
+        // Global Security Check
+        const validation = Digit.Utils.fileValidation.validateFile(fileData, { maxSizeMB: 5 });
+        if (!validation.isValid) {
+          console.error(`File upload blocked by security policy: ${validation.error}`);
+          throw new Error(`FILE_VALIDATION_FAILED_${validation.error}`);
+        }
+        const finalFile = validation.file;
+        formData.append("file", finalFile, finalFile.name);
+      }
+    }
     formData.append("tenantId", tenantId);
     formData.append("module", module);
     let tenantInfo=window?.globalConfigs?.getConfig("ENABLE_SINGLEINSTANCE")?`?tenantId=${tenantId}`:"";
