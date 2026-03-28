@@ -1,6 +1,5 @@
 
-FROM upyogio/alpine-node-builder-14:yarn AS build
-RUN npm install -g n && n 14.21.3
+FROM node:14.21.3-alpine AS build
 ARG WORK_DIR
 WORKDIR /app
 ENV NODE_OPTIONS "--max-old-space-size=1792"
