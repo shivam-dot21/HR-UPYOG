@@ -1,19 +1,33 @@
 package org.egov.user.security.oauth2.custom.authproviders;
 
-import lombok.extern.slf4j.Slf4j;
+import static java.util.Objects.isNull;
+import static org.egov.user.config.UserServiceConstants.IP_HEADER_NAME;
+import static org.springframework.util.StringUtils.isEmpty;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
+
 import org.egov.common.contract.request.RequestInfo;
-import org.egov.tracer.model.CustomException;
 import org.egov.tracer.model.ServiceCallException;
 import org.egov.user.domain.exception.DuplicateUserNameException;
 import org.egov.user.domain.exception.UserNotFoundException;
 import org.egov.user.domain.model.SecureUser;
 import org.egov.user.domain.model.User;
 import org.egov.user.domain.model.enums.UserType;
+import org.egov.user.domain.service.AuthAuditLogService;
 import org.egov.user.domain.service.UserService;
 import org.egov.user.domain.service.utils.EncryptionDecryptionUtil;
+import org.egov.user.domain.service.utils.PasswordCryptoUtil;
 import org.egov.user.web.contract.auth.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -23,15 +37,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import javax.servlet.http.HttpServletRequest;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static java.util.Objects.isNull;
-import static org.egov.user.config.UserServiceConstants.IP_HEADER_NAME;
-import static org.springframework.util.StringUtils.isEmpty;
-import org.egov.user.domain.service.AuthAuditLogService;
+import lombok.extern.slf4j.Slf4j;
 
 @Component("customAuthProvider")
 @Slf4j
@@ -64,9 +70,18 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
     @Autowired
     private HttpServletRequest request;
 
- // Audit log for user authentication actions - santosh kumar mahto
     @Autowired
     private AuthAuditLogService authAuditLogService;
+    
+    @Value("${password.encryption.enabled}")
+    private boolean passwordEncryptionEnabled;
+    
+    @Autowired
+    private PasswordCryptoUtil passwordCryptoUtil;
+    
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+
 
     public CustomAuthenticationProvider(UserService userService) {
         this.userService = userService;
@@ -74,13 +89,67 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
 
     @Override
     public Authentication authenticate(Authentication authentication) {
-        String userName = authentication.getName();
-        String password = authentication.getCredentials().toString();
+    	String userName = authentication.getName();
+        String encryptedPassword = authentication.getCredentials().toString();
+        String password = passwordCryptoUtil.decrypt(encryptedPassword);
+        
+
 
         final LinkedHashMap<String, String> details = (LinkedHashMap<String, String>) authentication.getDetails();
 
         String tenantId = details.get("tenantId");
         String userType = details.get("userType");
+        
+        
+        // =====================================================
+        //  CAPTCHA VALIDATION
+        // =====================================================
+
+        if (!"SYSTEM".equalsIgnoreCase(userType)) {
+	        String encryptedCaptcha = details.get("captcha");
+	        String encryptedCaptchaId = details.get("captchaId");
+	        
+	        String captcha = passwordCryptoUtil.decrypt(encryptedCaptcha); 
+	        String captchaId = passwordCryptoUtil.decrypt(encryptedCaptchaId);
+	        
+	        if (captchaId == null || captchaId.isEmpty()) {
+	            throw new OAuth2Exception("CaptchaId missing");
+	        }
+	
+	        if (captcha == null || captcha.trim().isEmpty()) {
+	            throw new OAuth2Exception("Captcha is mandatory");
+	        }
+	
+	        String redisKey = "CAPTCHA:" + captchaId;
+	
+	        String storedCaptcha = redisTemplate.opsForValue().get(redisKey);
+	
+	        log.info("Captcha entered: {}", captcha);
+	        log.info("Captcha stored in redis: {}", storedCaptcha);
+	
+	        if (storedCaptcha == null) {
+	            throw new OAuth2Exception("Captcha expired. Please refresh captcha");
+	        }
+	
+	        if (!storedCaptcha.equals(captcha)) {
+	
+	            authAuditLogService.log(
+	                    null,
+	                    userName,
+	                    request.getRemoteAddr(),
+	                    request.getHeader("User-Agent"),
+	                    null,
+	                    "LOGIN",
+	                    "FAILURE",
+	                    request.getRequestURI()
+	            );
+	
+	            throw new OAuth2Exception("Invalid captcha");
+	        }
+	        // delete after use
+	        redisTemplate.delete(redisKey);
+        }
+
 
         if (isEmpty(tenantId)) {
             throw new OAuth2Exception("TenantId is mandatory");
@@ -104,6 +173,8 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
                     .type(user.getType() != null ? user.getType().name() : null).roles(contract_roles).build();
             requestInfo = RequestInfo.builder().userInfo(userInfo).build();
             user = encryptionDecryptionUtil.decryptObject(user, "UserSelf", User.class, requestInfo);
+            
+            log.info(user.getUuid());
 
         } catch (UserNotFoundException e) {
             log.error("User not found", e);
@@ -175,7 +246,29 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             List<GrantedAuthority> grantedAuths = new ArrayList<>();
             grantedAuths.add(new SimpleGrantedAuthority("ROLE_" + user.getType()));
             final SecureUser secureUser = new SecureUser(getUser(user));
+            
+            log.info("SecureUser {} has been authenticated",secureUser.getUsername());
+            
             userService.resetFailedLoginAttempts(user);
+            
+            log.info("User {} has been successfully reset before call UsernamePasswordAuthenticationToken", user.getUuid());
+            log.info("Returning UsernamePasswordAuthenticationToken: principal = {}, credentials = {}, authorities = {}",
+                    secureUser,
+                    password,
+                    grantedAuths);
+            //return new UsernamePasswordAuthenticationToken(secureUser, password, grantedAuths);
+            UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
+                    secureUser,
+                    password,
+                    grantedAuths
+            );
+
+            //Log token content
+            log.info("Constructed UsernamePasswordAuthenticationToken: isAuthenticated = {}, principal class = {}",
+                    token.isAuthenticated(),
+                    token.getPrincipal() != null ? token.getPrincipal().getClass().getName() : "null"
+            );
+
             authAuditLogService.log(
             	    user.getUuid(),
             	    userName,
@@ -186,8 +279,10 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             	    "SUCCESS",
             	    request.getRequestURI()
             	);
-            return new UsernamePasswordAuthenticationToken(secureUser,
-                    password, grantedAuths);
+
+            // Return
+            return token;
+
         } else {
             // Handle failed login attempt
         	authAuditLogService.log(
@@ -289,5 +384,12 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
 
         return updatedUser;
     }
+    
+    
+    private boolean isCryptoJsEncrypted(String value) {
+        return value != null && value.startsWith("U2FsdGVkX1");
+    }
+
+
 
 }
