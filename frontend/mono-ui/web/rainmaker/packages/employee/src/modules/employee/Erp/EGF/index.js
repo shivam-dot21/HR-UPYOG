@@ -54,7 +54,7 @@ async fetchTTL() {
     // Construct URL dynamically based on tenant and environment
     // const TtlUrl = `${protocol}//${cityCode}-${domain}/services/EGF/session/ttl`;
     const TtlUrl = `${protocol}//${domain}/services/EGF/session/ttl`;
-    // const localhost = "http://citya.localhost:9090/services/EGF/session/ttl"; // for local dev only
+    // const TtlUrl = "http://gurugram.localhost:9090/services/EGF/session/ttl"; // for local dev only
     const response = await fetch(TtlUrl, { credentials: "include" });
     if (!response.ok) {
       console.warn("TTL API responded with status:", response.status);
@@ -250,7 +250,7 @@ async fetchTTL() {
     const subdomainurl = finEnv ? `-${finEnv}.${domainurl}` : `.${domainurl}`;
 
     const erp_url =
-      loc.protocol + "//" + getTenantId().split(".")[1] + subdomainurl + menuUrl;
+      loc.protocol + "//" + domainurl + menuUrl;
 
     this.setState({ isLoading: true, lastUrl: menuUrl }, () => {
       const form = document.getElementById("erp_form");
