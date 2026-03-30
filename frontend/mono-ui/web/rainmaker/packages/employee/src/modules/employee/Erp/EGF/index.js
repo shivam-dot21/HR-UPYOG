@@ -238,6 +238,7 @@ async fetchTTL() {
 
   /** Handle Finance module load */
   loadFinanceIframe() {
+    debugger;
     const menuUrl = this.props.location.pathname;
     const loc = window.location;
     const hostname = loc.hostname;
@@ -247,10 +248,9 @@ async fetchTTL() {
     const finEnv = this.globalConfigExists() ? window.globalConfigs.getConfig("FIN_ENV") : process.env.REACT_APP_FIN_ENV;
 
     // Construct subdomain dynamically
-    const subdomainurl = finEnv ? `-${finEnv}.${domainurl}` : `.${domainurl}`;
-
+    const subdomainurl = finEnv ? `${finEnv}.${domainurl}` : `.${domainurl}`;
     const erp_url =
-      loc.protocol + "//" + domainurl + menuUrl;
+      loc.protocol + "//"+ subdomainurl +  menuUrl;
 
     this.setState({ isLoading: true, lastUrl: menuUrl }, () => {
       const form = document.getElementById("erp_form");
