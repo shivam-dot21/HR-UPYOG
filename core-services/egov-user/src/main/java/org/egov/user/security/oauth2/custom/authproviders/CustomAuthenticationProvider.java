@@ -89,18 +89,24 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
 
     @Override
     public Authentication authenticate(Authentication authentication) {
-    	String userName = authentication.getName();
-        String encryptedPassword = authentication.getCredentials().toString();
-        String password = passwordCryptoUtil.decrypt(encryptedPassword);
-        
-
+        String userName = authentication.getName();
+        String credentials = authentication.getCredentials().toString();
 
         final LinkedHashMap<String, String> details = (LinkedHashMap<String, String>) authentication.getDetails();
 
         String tenantId = details.get("tenantId");
         String userType = details.get("userType");
         
-        
+        String password;
+        if (!"SYSTEM".equalsIgnoreCase(userType)) {
+            log.info("Processing encrypted credentials for user: {}", userName);
+            password = passwordCryptoUtil.decrypt(credentials);
+        } else {
+            log.info("Processing plain-text credentials for SYSTEM user: {}", userName);
+            password = credentials;
+        }
+
+                
         // =====================================================
         //  CAPTCHA VALIDATION
         // =====================================================
@@ -133,16 +139,17 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
 	
 	        if (!storedCaptcha.equals(captcha)) {
 	
-	            authAuditLogService.log(
-	                    null,
-	                    userName,
-	                    request.getRemoteAddr(),
-	                    request.getHeader("User-Agent"),
-	                    null,
-	                    "LOGIN",
-	                    "FAILURE",
-	                    request.getRequestURI()
-	            );
+	        	authAuditLogService.log(
+	        	        null,
+	        	        userName,
+	        	        getClientIp(request),
+	        	        request.getHeader("User-Agent"),
+	        	        null,
+	        	        "LOGIN",
+	        	        "FAILURE",
+	        	        request.getRequestURI()
+	        	);
+
 	
 	            throw new OAuth2Exception("Invalid captcha");
 	        }
@@ -179,9 +186,9 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         } catch (UserNotFoundException e) {
             log.error("User not found", e);
             authAuditLogService.log(
-                    null,                        // no user UUID
-                    userName,                    // attempted username
-                    request.getRemoteAddr(),
+                    null,                        
+                    userName,                    
+                    getClientIp(request), 
                     request.getHeader("User-Agent"),
                     request.getSession(false) != null ? request.getSession(false).getId() : null,
                     "LOGIN",
@@ -194,7 +201,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             authAuditLogService.log(
                     null,
                     userName,
-                    request.getRemoteAddr(),
+                    getClientIp(request),
                     request.getHeader("User-Agent"),
                     null,
                     "LOGIN",
@@ -270,15 +277,16 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             );
 
             authAuditLogService.log(
-            	    user.getUuid(),
-            	    userName,
-            	    request.getRemoteAddr(),
-            	    request.getHeader("User-Agent"),
-            	    request.getSession().getId(),
-            	    "LOGIN",
-            	    "SUCCESS",
-            	    request.getRequestURI()
-            	);
+                    user.getUuid(),
+                    userName,
+                    getClientIp(request), // <--- Changed here
+                    request.getHeader("User-Agent"),
+                    request.getSession().getId(),
+                    "LOGIN",
+                    "SUCCESS",
+                    request.getRequestURI()
+            );
+
 
             // Return
             return token;
@@ -389,7 +397,28 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
     private boolean isCryptoJsEncrypted(String value) {
         return value != null && value.startsWith("U2FsdGVkX1");
     }
+    
 
+    private String getClientIp(HttpServletRequest request) {
+        // Try the constant you already have defined first
+        String ipAddress = request.getHeader(IP_HEADER_NAME); 
+        
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("X-Forwarded-For");
+        }
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getHeader("X-Real-IP");
+        }
+        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
+            ipAddress = request.getRemoteAddr();
+        }
 
+        // If there are multiple IPs in X-Forwarded-For, the first one is the true client IP
+        if (ipAddress != null && ipAddress.contains(",")) {
+            ipAddress = ipAddress.split(",")[0].trim();
+        }
+
+        return ipAddress;
+    }
 
 }
