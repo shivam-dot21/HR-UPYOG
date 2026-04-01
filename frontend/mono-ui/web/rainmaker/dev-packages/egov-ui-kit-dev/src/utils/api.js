@@ -16,6 +16,75 @@ import { getLocaleLabels } from "egov-ui-framework/ui-utils/commons";
 import { addQueryArg, hasTokenExpired, prepareForm } from "./commons";
 import { setUserObj } from "./localStorageUtils";
 
+import CryptoJS from "crypto-js";
+
+const SECRET_KEY = "9f3c7a1d8e5b4c6f2a7d9e3c5b8f1a6d9f3c7a1d8e5b4c6f";
+
+export const encryptAES = (plainText) => {
+  if (!plainText) return "";
+
+  // 1. Create a Cryptographically Secure Nonce using CryptoJS
+  const nonce = CryptoJS.lib.WordArray.random(16).toString();
+  const timestamp = new Date().toISOString();
+
+  // 2. Format: Password|Nonce|Timestamp (Matches Java Backend)
+  const dataToEncrypt = `${plainText}|${nonce}|${timestamp}`;
+
+  const salt = CryptoJS.lib.WordArray.random(8);
+  const key = CryptoJS.PBKDF2(SECRET_KEY, salt, {
+    keySize: 256 / 32,
+    iterations: 1000,
+    hasher: CryptoJS.algo.SHA256
+  });
+
+  const iv = CryptoJS.lib.WordArray.random(16);
+  const encrypted = CryptoJS.AES.encrypt(dataToEncrypt, key, {
+    iv: iv,
+    mode: CryptoJS.mode.CBC,
+    padding: CryptoJS.pad.Pkcs7
+  });
+
+  const combined = CryptoJS.enc.Utf8.parse("Salted__")
+    .concat(salt)
+    .concat(iv)
+    .concat(encrypted.ciphertext);
+
+  return encodeURIComponent(CryptoJS.enc.Base64.stringify(combined));
+};
+
+export const decryptAES = (cipherText) => {
+  if (!cipherText) return "";
+  try {
+    const decodedStr = decodeURIComponent(cipherText);
+    const combined = CryptoJS.enc.Base64.parse(decodedStr);
+    const salt = CryptoJS.lib.WordArray.create(combined.words.slice(2, 4));
+    const iv = CryptoJS.lib.WordArray.create(combined.words.slice(4, 8));
+    const encryptedData = CryptoJS.lib.WordArray.create(
+      combined.words.slice(8),
+      combined.sigBytes - 32
+    );
+
+    const key = CryptoJS.PBKDF2(SECRET_KEY, salt, {
+      keySize: 256 / 32,
+      iterations: 1000,
+      hasher: CryptoJS.algo.SHA256,
+    });
+
+    const decrypted = CryptoJS.AES.decrypt({ ciphertext: encryptedData }, key, {
+      iv: iv,
+      mode: CryptoJS.mode.CBC,
+      padding: CryptoJS.pad.Pkcs7
+    });
+
+    const decryptedStr = decrypted.toString(CryptoJS.enc.Utf8);
+    const parts = decryptedStr.split("|");
+
+    return parts.length >= 3 ? parts[0] : "";
+  } catch (e) {
+    return "";
+  }
+};
+
 axios.interceptors.response.use(
   (response) => {
     return response;
@@ -162,11 +231,11 @@ export const httpRequest = async (
         apiError;
     }
   }
-    if (isTokenInvalid) {
-      clearUserDetails()
-      window.location.href = `${window.location.origin}/digit-ui/employee/user/login`;
-      return;
-    }
+  if (isTokenInvalid) {
+    clearUserDetails()
+    window.location.href = `${window.location.origin}/digit-ui/employee/user/login`;
+    return;
+  }
   throw new Error(apiError);
 };
 
@@ -211,7 +280,7 @@ export const uploadFile = async (endPoint, module, file, ulbLevel) => {
   }
 };
 
-export const loginRequest = async (username = null, password = null, refreshToken = "", grantType = "password", tenantId = "", userType) => {
+export const loginRequest = async (username = null, password = null, refreshToken = "", grantType = "password", tenantId = "", userType, captchaId = "", captcha = "") => {
   tenantId = tenantId ? tenantId : commonConfig.tenantId;
   const loginInstance = axios.create({
     baseURL: window.location.origin,
@@ -224,11 +293,21 @@ export const loginRequest = async (username = null, password = null, refreshToke
   let apiError = "Api Error";
   var params = new URLSearchParams();
   username && params.append("username", username);
-  password && params.append("password", password);
+  // password && params.append("password", password);
+  if (password) {
+    params.append("password", encryptAES(password));
+  }
   refreshToken && params.append("refresh_token", refreshToken);
   params.append("grant_type", grantType);
   params.append("scope", "read");
   params.append("tenantId", tenantId);
+  // params.append('captchaId', captchaId);
+
+  params.append("captchaId", encryptAES(captchaId));
+
+
+  params.append("captcha", encryptAES(captcha));
+
   userType && params.append("userType", userType);
 
   try {
@@ -355,7 +434,7 @@ export const commonApiPost = (
           // _err=response.response.data.error.message?"a) "+extractErrorMsg(response.response.data.error, "message", "description")+" : ":"";
           // let fields=response.response.data.error.fields;
           if (response.response.data.Errors.length == 1) {
-            if(response.response.data.Errors[0].message.includes("InvalidAccessTokenException")){
+            if (response.response.data.Errors[0].message.includes("InvalidAccessTokenException")) {
               throw new Error(getLocaleLabels("InvalidAccessTokenException"));
             }
             _err += getLocaleLabels(response.response.data.Errors[0].message) + ".";
@@ -455,7 +534,7 @@ export const downloadPdfFile = async (
     responseType: "arraybuffer",
     headers: {
       "Content-Type": "application/json",
-      Accept: commonConfig.singleInstance ?"application/pdf,application/json":"application/pdf",
+      Accept: commonConfig.singleInstance ? "application/pdf,application/json" : "application/pdf",
     },
   });
 
