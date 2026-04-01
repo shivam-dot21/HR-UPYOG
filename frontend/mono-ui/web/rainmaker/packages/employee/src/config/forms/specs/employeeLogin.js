@@ -30,6 +30,19 @@ const formConfig = {
       floatingLabelText: "CORE_COMMON_CITY",
       hintText: "CORE_COMMON_CITY_PLACEHOLDER",
     },
+    captcha: {
+      id: "employee-captcha",
+      jsonPath: "employee.captcha",
+      required: true,
+      floatingLabelText: "CORE_COMMON_CAPTCHA",
+      hintText: "CORE_COMMON_CAPTCHA_PLACEHOLDER",
+      errorMessage: "CORE_COMMON_CAPTCHA_INVALIDMSG",
+    },
+    captchaId: {
+      id: "employee-captcha-id",
+      jsonPath: "employee.captchaId",
+      required: false,
+    },
   },
   submit: {
     label: "CORE_COMMON_LOGIN",
