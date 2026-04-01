@@ -1,6 +1,6 @@
 FROM upyogio/alpine-node-builder-14:yarn AS build
 #FROM ghcr.io/egovernments/alpine-node-builder-14:yarn AS build
-// ENV yarn_config_ignore_engines=true
+# ENV yarn_config_ignore_engines=true
 RUN apk update && apk upgrade
 RUN apk add --no-cache git>2.30.0
 RUN yarn add @upyog/digit-ui-libraries@3.0.0 --ignore-engines
