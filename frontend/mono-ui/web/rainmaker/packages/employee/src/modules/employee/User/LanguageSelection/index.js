@@ -21,7 +21,7 @@ class LanguageSelection extends Component {
     if (isLocal) {
       this.props.history.push("/user/login");
     } else {
-      window.location.href = "/digit-ui/";
+      window.location.href = "/digit-ui/employee";
     }
   };
 
